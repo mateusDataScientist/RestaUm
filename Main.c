@@ -77,10 +77,10 @@ void movimentoVertical(char tabuleiro[][7], int linha, int coluna, int profundid
 void movimentoHorizontal(char tabuleiro[][7], int linha, int coluna, int profundidade){
     if(achou) return;
  
-    int dirs[] = {-1, 1};
+    int dirs[] = {-1, 1}; // direções: esquerda = -1 ; direita = 1
     for(int i = 0; i < 2; i++){
-        int c1 = coluna + dirs[i];
-        int c2 = coluna + 2 * dirs[i];
+        int c1 = coluna + dirs[i]; // peça intermediária
+        int c2 = coluna + 2 * dirs[i]; // peça final do movimento
  
         if(tabuleiro[linha][coluna] == 'X' && movimentoValidoH(tabuleiro, linha, c1, c2)){
             // Faz o movimento
