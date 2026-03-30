@@ -5,16 +5,19 @@
 #include <time.h>
  
 #define MAX_MOV 31
- 
+
+// Vetores para armazenar a solução (posição inicial: solR1 e solC1; posição final: solR3 e solC3)
 int solR1[MAX_MOV], solC1[MAX_MOV];
 int solR3[MAX_MOV], solC3[MAX_MOV];
  
-unsigned long nos = 0;
+unsigned long nos = 0; // contador de nós (estados explorados do backtracking)
 clock_t inicio;
 bool achou = false;
- 
-bool backtracking(char tabuleiro[][7], int pecas, int prof);
 
+// Protótipo da função backtracking
+bool backtracking(char tabuleiro[][7], int pecas, int profundidade);
+
+// Conta a quantidade de peças 'X'
 int contaPecas(char tabuleiro[][7]){
     int count = 0;
     for(int i = 0; i < 7; i++)
@@ -22,45 +25,56 @@ int contaPecas(char tabuleiro[][7]){
             if(tabuleiro[i][k] == 'X') count++;
     return count;
 }
- 
+
+// Verifica o movimento vertical. (l2 = linha intermediária, l3 = linha final do movimento)
 bool movimentoValido(char tabuleiro[][7], int l2, int l3, int coluna){
+    // Checa os limites do tabuleiro
     if(l2 < 0 || l2 >= 7 || l3 < 0 || l3 >= 7) return false;
     if(coluna < 0 || coluna >= 7) return false;
+    // Checa se há uma peça adjacente a 'X' e se há um espaço vazio depois 'O'
     return (tabuleiro[l2][coluna] == 'X' && tabuleiro[l3][coluna] == 'O');
 }
- 
+
+// Verifica o movimento horizontal. (c2 = coluna intermediária, c3 = coluna final do movimento)
 bool movimentoValidoH(char tabuleiro[][7], int linha, int c2, int c3){
+    // Checa os limites do tabuleiro
     if(c2 < 0 || c2 >= 7 || c3 < 0 || c3 >= 7) return false;
     if(linha < 0 || linha >= 7) return false;
+    // Checa se há uma peça adjacente a 'X' e se há um espaço vazio depois 'O'
     return (tabuleiro[linha][c2] == 'X' && tabuleiro[linha][c3] == 'O');
 }
- 
-void movimentoVertical(char tabuleiro[][7], int linha, int coluna, int prof){
+
+// Tenta realizar os movimentos verticais
+void movimentoVertical(char tabuleiro[][7], int linha, int coluna, int profundidade){
     if(achou) return;
  
-    int dirs[] = {-1, 1};
+    int dirs[] = {-1, 1};   // direções: cima = -1 ; baixo = 1
     for(int i = 0; i < 2; i++){
-        int k1 = linha + dirs[i];
-        int k2 = linha + 2 * dirs[i];
+        int k1 = linha + dirs[i]; // peça intermediária
+        int k2 = linha + 2 * dirs[i]; // peça final do movimento
  
         if(tabuleiro[linha][coluna] == 'X' && movimentoValido(tabuleiro, k1, k2, coluna)){
+            // Faz o movimento
             tabuleiro[linha][coluna] = 'O';
             tabuleiro[k1][coluna]   = 'O';
             tabuleiro[k2][coluna]   = 'X';
+            
+            // Salva movimento feito
+            solR1[profundidade] = linha; solC1[profundidade] = coluna;
+            solR3[profundidade] = k2;   solC3[profundidade] = coluna;
  
-            solR1[prof] = linha; solC1[prof] = coluna;
-            solR3[prof] = k2;   solC3[prof] = coluna;
- 
-            if(backtracking(tabuleiro, contaPecas(tabuleiro), prof + 1)){ achou = true; return; }
- 
+            if(backtracking(tabuleiro, contaPecas(tabuleiro), profundidade + 1)){ achou = true; return; }
+            
+            // Desfaz movimento 
             tabuleiro[linha][coluna] = 'X';
             tabuleiro[k1][coluna]   = 'X';
             tabuleiro[k2][coluna]   = 'O';
         }
     }
 }
- 
-void movimentoHorizontal(char tabuleiro[][7], int linha, int coluna, int prof){
+
+// Tenta realizar os movimentos horizontais
+void movimentoHorizontal(char tabuleiro[][7], int linha, int coluna, int profundidade){
     if(achou) return;
  
     int dirs[] = {-1, 1};
@@ -69,15 +83,18 @@ void movimentoHorizontal(char tabuleiro[][7], int linha, int coluna, int prof){
         int c2 = coluna + 2 * dirs[i];
  
         if(tabuleiro[linha][coluna] == 'X' && movimentoValidoH(tabuleiro, linha, c1, c2)){
+            // Faz o movimento
             tabuleiro[linha][coluna] = 'O';
             tabuleiro[linha][c1]    = 'O';
             tabuleiro[linha][c2]    = 'X';
+            
+            // Salva o movimento feito
+            solR1[profundidade] = linha; solC1[profundidade] = coluna;
+            solR3[profundidade] = linha; solC3[profundidade] = c2;
  
-            solR1[prof] = linha; solC1[prof] = coluna;
-            solR3[prof] = linha; solC3[prof] = c2;
- 
-            if(backtracking(tabuleiro, contaPecas(tabuleiro), prof + 1)){ achou = true; return; }
- 
+            if(backtracking(tabuleiro, contaPecas(tabuleiro), profundidade + 1)){ achou = true; return; }
+            
+            // Desfaz o movimento
             tabuleiro[linha][coluna] = 'X';
             tabuleiro[linha][c1]    = 'X';
             tabuleiro[linha][c2]    = 'O';
@@ -107,7 +124,8 @@ void imprimeArquivo(char tabuleiro[][7], FILE *f){
     }
     fprintf(f, "#########\n\n");
 }
- 
+
+// Refaz a solução e salva no arquivo restaum.out
 void salvarSolucao(char tabInicial[][7]){
     FILE *f = fopen("restaum.out", "w");
  
@@ -115,7 +133,8 @@ void salvarSolucao(char tabInicial[][7]){
     memcpy(tab, tabInicial, sizeof(tab));
  
     imprimeArquivo(tab, f);
- 
+    
+    // looping para reproduzir os movimentos guardados anteriormente
     for(int i = 0; i < MAX_MOV; i++){
         int r1 = solR1[i], c1 = solC1[i];
         int r3 = solR3[i], c3 = solC3[i];
@@ -133,39 +152,56 @@ void salvarSolucao(char tabInicial[][7]){
     printf("Solução encontrada! Peças restantes: %d\n", contaPecas(tab));
 }
 
-bool backtracking(char tabuleiro[][7], int pecas, int prof){
+void carregarTabuleiro(char tabuleiro[7][7]) {
+    FILE *f = fopen("tabuleiro.txt", "r");
+
+    if (f == NULL) {
+        printf("Erro ao abrir arquivo!\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < 7; i++) {
+        for (int j = 0; j < 7; j++) {
+            fscanf(f, " %c", &tabuleiro[i][j]);
+        }
+    }
+
+    fclose(f);
+}
+
+// função principal
+bool backtracking(char tabuleiro[][7], int pecas, int profundidade){
+    // caso base = pecas == 1 e a única peça estar no meio do tabuleiro
     if(pecas == 1) return (tabuleiro[3][3] == 'X');
-    if(prof >= MAX_MOV) return false;
+    // limite da profundidade
+    if(profundidade >= MAX_MOV) return false;
  
     nos++;
+    // Mostra progresso a cada 200mil nós explorados
     if(nos % 200000 == 0){
         double tempo = (double)(clock() - inicio) / CLOCKS_PER_SEC;
-        printf("Progresso: %lu nos | prof=%d | pecas=%d | %.1fs\n", nos, prof, pecas, tempo);
+        printf("Progresso: %lu nos | profundidade=%d | pecas=%d | %.1fs\n", nos, profundidade, pecas, tempo);
         fflush(stdout);
     }
- 
+    
+    // Tenta todos os movimentos possíveis do tabuleiro
     for(int i = 0; i < 7; i++){
         for(int k = 0; k < 7; k++){
             if(tabuleiro[i][k] == 'X'){
-                movimentoVertical  (tabuleiro, i, k, prof); if(achou) return true;
-                movimentoHorizontal(tabuleiro, i, k, prof); if(achou) return true;
+                movimentoVertical  (tabuleiro, i, k, profundidade); if(achou) return true;
+                movimentoHorizontal(tabuleiro, i, k, profundidade); if(achou) return true;
             }
         }
     }
+    // Caso nenhum caminho der solução
     return false;
 }
 
 int main()
 {
-    char tabuleiro[7][7] = {
-        {'#','#','X','X','X','#','#'},
-        {'#','#','X','X','X','#','#'},
-        {'X','X','X','X','X','X','X'},
-        {'X','X','X','O','X','X','X'},
-        {'X','X','X','X','X','X','X'},
-        {'#','#','X','X','X','#','#'},
-        {'#','#','X','X','X','#','#'}
-    };
+    char tabuleiro[7][7];
+
+    carregarTabuleiro(tabuleiro);
  
     char tabInicial[7][7];
     memcpy(tabInicial, tabuleiro, sizeof(tabuleiro));
